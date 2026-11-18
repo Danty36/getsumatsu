@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="月末判定">
+<meta name="theme-color" content="#F3F6F7">
+<title>月末判定</title>
+<style>
+:root{
+  --bg:#F3F6F7; --surface:#FFFFFF; --ink:#15222C; --muted:#5A6874; --line:#D9E1E6;
+  --accent:#1D6A86; --accent-soft:#E2EFF4;
+  --ok:#2C7A57; --ok-soft:#E3F2EA; --warn:#A66A12; --warn-soft:#FBF0DD; --danger:#B0281F; --danger-soft:#FBE6E4;
+  --track:#E7ECEF;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F171D; --surface:#17222A; --ink:#E6EDF1; --muted:#9AA9B4; --line:#2A3943;
+    --accent:#6FB6D3; --accent-soft:#1D3340;
+    --ok:#6BC79A; --ok-soft:#173327; --warn:#E3AE5A; --warn-soft:#3A2D16; --danger:#F08A80; --danger-soft:#3D1D1A;
+    --track:#24323B;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F171D; --surface:#17222A; --ink:#E6EDF1; --muted:#9AA9B4; --line:#2A3943;
+  --accent:#6FB6D3; --accent-soft:#1D3340;
+  --ok:#6BC79A; --ok-soft:#173327; --warn:#E3AE5A; --warn-soft:#3A2D16; --danger:#F08A80; --danger-soft:#3D1D1A;
+  --track:#24323B; color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;
+  font-size:15px;line-height:1.6;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+main{max-width:640px;margin:0 auto;padding:16px 16px 96px}
+h1{font-size:13px;font-weight:600;color:var(--muted);margin:4px 0 2px;letter-spacing:.02em}
+h2{font-size:17px;font-weight:700;margin:28px 0 10px}
+h3{font-size:15px;font-weight:700;margin:18px 0 8px}
+p{margin:0 0 8px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+section.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+/* hero gauge */
+.hero{padding:20px 16px 18px}
+.hero-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.cash{font-size:38px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.cash small{font-size:16px;font-weight:600;margin-left:2px}
+.stage{display:inline-block;font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px}
+.stage.danger{background:var(--danger-soft);color:var(--danger)}
+.stage.warn{background:var(--warn-soft);color:var(--warn)}
+.stage.normal{background:var(--accent-soft);color:var(--accent)}
+.stage.ok{background:var(--ok-soft);color:var(--ok)}
+.gauge{position:relative;height:56px;margin:18px 0 6px}
+.gauge .bar{position:absolute;left:0;right:0;top:18px;height:14px;background:var(--track);border-radius:7px;overflow:hidden}
+.gauge .fill{position:absolute;left:0;top:0;bottom:0;border-radius:7px}
+.gauge .mark{position:absolute;top:10px;width:2px;height:30px;background:var(--ink);opacity:.55}
+.gauge .mark span{position:absolute;top:32px;transform:translateX(-50%);font-size:11px;white-space:nowrap;color:var(--muted)}
+.gauge .proj{position:absolute;top:13px;width:14px;height:24px;margin-left:-7px;border:2px solid var(--ink);border-radius:4px;background:transparent}
+.gauge .proj span{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:11px;white-space:nowrap;color:var(--muted)}
+.legend{font-size:12px;color:var(--muted)}
+/* actions */
+ol.actions{list-style:none;margin:0;padding:0;counter-reset:a}
+ol.actions li{counter-increment:a;position:relative;padding:12px 0 12px 38px;border-top:1px solid var(--line)}
+ol.actions li:first-child{border-top:none}
+ol.actions li::before{content:counter(a);position:absolute;left:0;top:12px;width:26px;height:26px;border-radius:50%;
+  display:grid;place-items:center;font-size:13px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+ol.actions li.danger::before{background:var(--danger-soft);color:var(--danger)}
+ol.actions li.warn::before{background:var(--warn-soft);color:var(--warn)}
+ol.actions li.ok::before{background:var(--ok-soft);color:var(--ok)}
+.act-title{font-weight:700}
+.act-body{font-size:14px;color:var(--muted);margin-top:2px}
+ul.notes{margin:0;padding-left:18px}
+ul.notes li{margin:4px 0}
+/* tables */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+@media (max-width:420px){table{font-size:13px}th,td{padding:6px 4px}}
+th:first-child,td:first-child{text-align:left}
+th{font-size:12px;font-weight:600;color:var(--muted)}
+tr.low td{color:var(--danger);font-weight:700}
+/* tiers */
+.tiers{display:flex;height:18px;border-radius:9px;overflow:hidden;margin:10px 0 8px;background:var(--track)}
+.tiers div{height:100%}
+.tier-legend{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;font-size:14px;align-items:center}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+/* forms */
+label.f{display:block;margin:10px 0}
+label.f > span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.hint{font-size:12px;color:var(--muted);margin-top:3px}
+button{font:inherit;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 14px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+:root[data-theme="dark"] button.primary{color:#0F171D}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) button.primary{color:#0F171D}}
+button.danger{color:var(--danger)}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.list-row{display:grid;gap:6px;align-items:center;margin:6px 0}
+.list-row button{padding:8px 10px}
+.list-row.wide{padding-bottom:10px;border-bottom:1px solid var(--line)}
+.list-row.wide button{grid-column:1 / -1;justify-self:start}
+.empty{padding:20px 4px;text-align:left}
+/* nav */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+nav.tabs button{border:none;border-radius:0;background:transparent;padding:10px 4px 12px;font-size:13px;color:var(--muted)}
+nav.tabs button[aria-current="page"]{color:var(--accent);font-weight:700;box-shadow:inset 0 3px 0 var(--accent)}
+.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:30;opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion: reduce){.toast{transition:none}}
+svg text{fill:var(--muted);font-size:11px}
+.chart-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+details summary{cursor:pointer;font-weight:700;padding:6px 0}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<nav class="tabs" aria-label="画面の切り替え">
+  <button data-tab="judge">判定</button>
+  <button data-tab="input">月末入力</button>
+  <button data-tab="trend">推移</button>
+  <button data-tab="settings">設定</button>
+</nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+const KEY = "getsumatsu-hantei-v1";
+
+/* ---------- 既定値（個人の数字は含めない。設定ファイルの読み込みで上書き） ---------- */
+const DEFAULT_SETTINGS = {
+  minCash: 1500000, targetCash: 3000000, rateTrigger: 0.025, stockCap: 0.20,
+  principalWarn: 30000, horizon: 3,
+  takeHome: [], loanPayment: [], kanri: [],
+  loanStartYm: "", loanPrincipal: 0,
+  ptaxAnnual: 0, ptaxStartYm: "", ptaxMonths: "6,9,12,2",
+  fixed: 0, free: 0, esMonthly: 0, esBonusRate: 0.10,
+  variableBudget: 0, variableSelfUntil: "",
+  nisaOrkan: 0, nisaFang: 0, nisaReducedOrkan: 0, nisaReducedFang: 0,
+  avgCost: 0, rsCost: 0, taxRate: 0.20315, esUnit: 100,
+  prepayMonth: 1, prepayUnit: 10000,
+  matching: "未確認", matchingRoom: 0,
+  events: [], leave: []
+};
+const blankRecord = () => ({ym:"", cash:"", orkan:"", fang:"", esShares:"", rsFree:"", rsLock:"", price:"", rate:"", loanBalance:"",
+  nisaActual:"", nisaCatchup:"", prepaid:"", stockSoldYen:"", variableActual:"", extraActual:"", memo:""});
+
+/* ---------- 保存 ---------- */
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ const d = JSON.parse(raw); return {settings:Object.assign({}, DEFAULT_SETTINGS, d.settings||{}), records:d.records||[]}; }
+  }catch(e){}
+  return {settings:Object.assign({}, DEFAULT_SETTINGS), records:[]};
+}
+let state = load();
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); return true; }
+  catch(e){ toast("端末に保存できませんでした。バックアップを書き出してください"); return false; }
+}
+
+/* ---------- ユーティリティ ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const n = v => { const x = parseFloat(String(v).replace(/[,，\s円]/g,"")); return isFinite(x) ? x : 0; };
+const has = v => v!=="" && v!=null && isFinite(parseFloat(String(v).replace(/[,，\s円]/g,"")));
+const yen = v => (v<0?"−":"") + Math.round(Math.abs(v)).toLocaleString("ja-JP") + "円";
+const man = v => (v<0?"−":"") + (Math.abs(v)/10000).toLocaleString("ja-JP",{maximumFractionDigits:1}) + "万円";
+const pct = v => (v*100).toLocaleString("ja-JP",{maximumFractionDigits:2}) + "%";
+const ymAdd = (ym, k) => { const [y,m] = ym.split("-").map(Number); const t = y*12 + (m-1) + k; return `${Math.floor(t/12)}-${String(t%12+1).padStart(2,"0")}`; };
+const ymLabel = ym => { if(!ym) return ""; const [y,m] = ym.split("-"); return `${y}年${Number(m)}月`; };
+const ymNow = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; };
+const month = ym => Number(ym.split("-")[1]);
+function sched(list, ym){ let v = 0; (list||[]).filter(x=>x.from).sort((a,b)=>a.from<b.from?-1:1).forEach(x=>{ if(x.from<=ym) v = n(x.amount); }); return v; }
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove("show"), 2600); }
+const sortedRecords = () => state.records.slice().sort((a,b)=>a.ym<b.ym?-1:1);
+
+/* ---------- 毎月のお金の流れ ---------- */
+function onLeave(ym){ return (state.settings.leave||[]).some(l => l.start && ym>=l.start && ym<ymAdd(l.start, n(l.months))); }
+function shoulder(ym){ return (state.settings.leave||[]).reduce((s,l)=> (l.start && ym>=l.start && ym<ymAdd(l.start, n(l.months))) ? s+n(l.amount) : s, 0); }
+function ptax(ym){
+  const s = state.settings; if(!s.ptaxStartYm || ym < s.ptaxStartYm || !n(s.ptaxAnnual)) return 0;
+  const ms = String(s.ptaxMonths).split(/[,、\s]+/).map(Number).filter(Boolean);
+  return ms.includes(month(ym)) ? Math.round(n(s.ptaxAnnual)/ms.length) : 0;
+}
+function eventsIn(ym, kind){ return (state.settings.events||[]).filter(e=>e.ym===ym && (e.kind||"out")===kind); }
+function nisaAmount(mode){
+  const s = state.settings;
+  if(mode==="full") return n(s.nisaOrkan)+n(s.nisaFang);
+  if(mode==="reduced") return n(s.nisaReducedOrkan)+n(s.nisaReducedFang);
+  return 0;
+}
+function flows(ym, mode){
+  const s = state.settings;
+  const evIn = eventsIn(ym,"in"), evOut = eventsIn(ym,"out");
+  const inc = sched(s.takeHome, ym) + evIn.reduce((a,e)=>a+n(e.amount),0);
+  const parts = {
+    "ローン返済": sched(s.loanPayment, ym),
+    "管理費等": sched(s.kanri, ym),
+    "固定資産税": ptax(ym),
+    "固定費": n(s.fixed),
+    "自由費・予備費": n(s.free),
+    "持株会": n(s.esMonthly),
+    "変動費（自己負担）": (s.variableSelfUntil && ym<=s.variableSelfUntil) ? n(s.variableBudget) : 0,
+    "育休の肩代わり": shoulder(ym),
+    "予定の支出": evOut.reduce((a,e)=>a+n(e.amount),0),
+    "NISA": nisaAmount(onLeave(ym) && mode==="full" ? "reduced" : mode)
+  };
+  const out = Object.values(parts).reduce((a,b)=>a+b,0);
+  return {inc, out, parts, evIn, evOut};
+}
+function project(cash, ym, mode){
+  const h = n(state.settings.horizon)||3; let c = cash, min = cash, rows = [];
+  for(let i=1;i<=h;i++){ const m = ymAdd(ym,i); const f = flows(m, mode); c += f.inc - f.out; min = Math.min(min,c); rows.push({ym:m, inc:f.inc, out:f.out, cash:c, f}); }
+  return {rows, min, end:c};
+}
+
+/* ---------- 残債の推定 ---------- */
+function loanBalanceAt(ym){
+  const s = state.settings, recs = sortedRecords();
+  const known = recs.filter(r=>r.ym<=ym && has(r.loanBalance)).pop();
+  let bal, from;
+  if(known){ bal = n(known.loanBalance); from = known.ym; }
+  else if(s.loanStartYm && n(s.loanPrincipal)){ bal = n(s.loanPrincipal); from = ymAdd(s.loanStartYm,-1); }
+  else return null;
+  let m = from, rate = 0;
+  while(m < ym){
+    m = ymAdd(m,1);
+    const r = recs.filter(x=>x.ym<=m && has(x.rate)).pop(); rate = r ? n(r.rate)/100 : rate;
+    const pay = sched(s.loanPayment, m); const int = bal*rate/12;
+    bal = Math.max(0, bal + int - pay);
+    const rec = recs.find(x=>x.ym===m); if(rec && has(rec.prepaid)) bal = Math.max(0, bal - n(rec.prepaid));
+  }
+  return bal;
+}
+
+/* ---------- 判定 ---------- */
+function analyze(rec){
+  const s = state.settings, ym = rec.ym, cash = n(rec.cash);
+  const min = n(s.minCash), target = n(s.targetCash);
+  const price = n(rec.price), tax = n(s.taxRate);
+  const nisaVal = n(rec.orkan)+n(rec.fang);
+  const stockVal = (n(rec.esShares)+n(rec.rsFree)+n(rec.rsLock))*price;
+  const fin = cash + nisaVal + stockVal;
+  const proj = {full:project(cash, ym, "full"), reduced:project(cash, ym, "reduced"), stop:project(cash, ym, "stop")};
+  const recs = sortedRecords().filter(r=>r.ym<=ym);
+  const planFull = nisaAmount("full");
+  const owed = Math.max(0, recs.reduce((a,r)=> a + (has(r.nisaActual) ? Math.max(0, planFull - n(r.nisaActual)) : 0) - n(r.nisaCatchup), 0));
+  const rate = (()=>{ const r = recs.filter(x=>has(x.rate)).pop(); return r ? n(r.rate)/100 : null; })();
+  const bal = has(rec.loanBalance) ? n(rec.loanBalance) : loanBalanceAt(ym);
+  const pay = sched(s.loanPayment, ymAdd(ym,1));
+  const principalPart = (bal!=null && rate!=null) ? pay - bal*rate/12 : null;
+  const breakeven = (bal && pay) ? pay*12/bal : null;
+  const leaveNow = onLeave(ym) || onLeave(ymAdd(ym,1));
+
+  let stage, stageCls;
+  if(cash < min){ stage = "要対応：下限を下回っています"; stageCls = "danger"; }
+  else if(proj.full.min < min){ stage = "要対応：3か月以内に下限を下回る見込み"; stageCls = "warn"; }
+  else if(cash < target){ stage = "通常：現金を積み増す時期"; stageCls = "normal"; }
+  else { stage = "余裕：目標額に到達"; stageCls = "ok"; }
+
+  const acts = [];
+  const netRS = price - Math.max(0, price - n(s.rsCost))*tax;
+  const netES = price - Math.max(0, price - n(s.avgCost))*tax;
+  let mode = "full";
+  // 1. 下限の確保
+  if(proj.full.min < min || cash < min){
+    if(proj.reduced.min >= min && nisaAmount("reduced") < planFull){
+      mode = "reduced";
+      acts.push({cls:"warn", title:`NISAを月${man(nisaAmount("reduced"))}に減らす`,
+        body:`成長投資枠のFANG+から減らします。減らした分は、現金が目標額を超えたら成長投資枠でまとめて買い戻します。3か月先の最少残高は${man(proj.reduced.min)}の見込みです。`});
+    } else if(proj.stop.min >= min){
+      mode = "stop";
+      acts.push({cls:"warn", title:"NISAの積立を一時停止する",
+        body:`減額だけでは下限を守れません。停止すれば3か月先の最少残高は${man(proj.stop.min)}の見込みです。`});
+    } else {
+      mode = "stop";
+      const short = min - Math.min(proj.stop.min, cash);
+      let rest = short, sellRS = 0, sellES = 0;
+      if(price>0){
+        sellRS = Math.min(n(rec.rsFree), Math.ceil(rest/Math.max(1,netRS))); rest -= sellRS*netRS;
+        if(rest>0){ const unit = n(s.esUnit)||1; sellES = Math.min(n(rec.esShares), Math.ceil(Math.ceil(rest/Math.max(1,netES))/unit)*unit); rest -= sellES*netES; }
+      }
+      acts.push({cls:"danger", title:"NISAを止めたうえで、自社株を売る",
+        body:`下限まで約${man(short)}不足します。${sellRS?`RSの解除済み分を${sellRS}株（税引後 約${man(sellRS*netRS)}）`:""}${sellRS&&sellES?"、":""}${sellES?`持株会の株を${sellES}株（税引後 約${man(sellES*netES)}）`:""}${(!sellRS&&!sellES)?"株価と保有株数を入力すると、必要な株数を計算します":""}売る目安です。社内の売買禁止期間を確認してください。${rest>0&&price>0?` それでも約${man(rest)}足りないため、NISAの一部売却も検討してください。`:""}`});
+    }
+  } else if(cash < target){
+    acts.push({cls:"normal", title:"余剰は現金の積み増しに回す",
+      body:`NISAは設定どおり月${man(planFull)}を続けます。目標額まであと${man(target-cash)}です。`});
+  } else {
+    let surplus = cash - target;
+    if(owed>0){
+      const buy = Math.min(owed, Math.floor(surplus/10000)*10000);
+      if(buy>0){ acts.push({cls:"ok", title:`NISAの減額分${man(buy)}を買い戻す`, body:`成長投資枠でまとめて購入します。未買い戻しの残りは${man(owed-buy)}です。`}); surplus -= buy; }
+    }
+    if(s.matching==="未開始" && surplus>0){
+      acts.push({cls:"ok", title:"マッチング拠出（またはiDeCo）の開始を検討する",
+        body:`掛金の約3割が節税として戻り、繰上げ返済より効果が大きい使い道です。上乗せできる枠は月${man(n(s.matchingRoom))}。まず月1〜2万円からが目安です。`});
+    }
+    if(surplus>0){
+      const unit = n(s.prepayUnit)||10000, pp = Math.floor(surplus/unit)*unit;
+      const nextPP = (()=>{ for(let i=1;i<=12;i++){ const m = ymAdd(ym,i); if(month(m)===n(s.prepayMonth)) return m; } return null; })();
+      if(leaveNow) acts.push({cls:"normal", title:"育休期間中は繰上げ返済をしない", body:"手元の現金を優先します。"});
+      else if(pp>0) acts.push({cls:"ok", title: nextPP===ymAdd(ym,1) ? `来月、期間短縮型で${man(pp)}を繰上げ返済する` : `${ymLabel(nextPP)}に繰上げ返済を予定する（現時点で${man(pp)}）`,
+        body:"目標額を超えた分だけを充てます。実行額は実行月の前月末の残高で決め直します。"});
+    }
+  }
+  // 2. 金利
+  if(rate!=null && rate >= n(s.rateTrigger)){
+    acts.push({cls:"danger", title:`金利が${pct(rate)}で、見直し基準（${pct(n(s.rateTrigger))}）を超えています`,
+      body:"現金が目標額を超えた分は、マッチング拠出より繰上げ返済を優先します。固定金利への切り替えも比較してください。"});
+  }
+  if(principalPart!=null && principalPart < n(s.principalWarn)){
+    acts.push({cls: principalPart<=0?"danger":"warn", title: principalPart<=0 ? "返済が利息に追いつかず、元本が減っていません" : `元本の減り方が鈍っています（月${man(principalPart)}）`,
+      body:`この残高で元本が減らなくなる金利は約${pct(breakeven)}です。繰上げ返済で残高を減らすと、この水準が上がります。`});
+  }
+  // 3. 自社株比率
+  const ratio = fin>0 ? stockVal/fin : 0;
+  if(ratio > n(s.stockCap) && price>0){
+    const excess = stockVal - n(s.stockCap)*fin; const unit = n(s.esUnit)||1;
+    const sh = Math.ceil(excess/price/unit)*unit;
+    acts.push({cls:"warn", title:`自社株の比率が${pct(ratio)}で、上限（${pct(n(s.stockCap))}）を超えています`,
+      body:`上限に戻すには約${sh}株（約${man(sh*price)}）の売却が目安です。売却の時期は売買禁止期間を避けて決めてください。急ぐ必要はありません。`});
+  }
+  // 4. 育休
+  if(leaveNow) acts.push({cls:"normal", title:"育休期間に入っています（または来月から）", body:`変動費の肩代わり月${man(shoulder(ymAdd(ym,1)))}を見込んでいます。NISAは育休中の設定額（減額）で計算しています。`});
+
+  // リマインダー（翌月）
+  const nx = ymAdd(ym,1), reminders = [];
+  if([4,10].includes(month(nx))) reminders.push(`${ymLabel(nx)}は変動金利の見直し月です。適用金利を確認して入力してください。`);
+  if(ptax(nx)) reminders.push(`${ymLabel(nx)}は固定資産税の納付月です（${yen(ptax(nx))}）。`);
+  eventsIn(nx,"out").forEach(e=>reminders.push(`${ymLabel(nx)}の予定の支出：${e.label||"（内容未入力）"} ${yen(n(e.amount))}`));
+  eventsIn(nx,"in").forEach(e=>reminders.push(`${ymLabel(nx)}の予定の収入：${e.label||"（内容未入力）"} ${yen(n(e.amount))}`));
+  (state.settings.leave||[]).forEach(l=>{ if(l.start && l.start>ym && l.start<=ymAdd(ym,3)) reminders.push(`${ymLabel(l.start)}から育休の予定です。現金を厚めにしておいてください。`); });
+
+  return {stage, stageCls, proj, mode, acts, reminders, nisaVal, stockVal, fin, ratio, owed, rate, bal, principalPart, breakeven};
+}
+
+/* ---------- 画面：判定 ---------- */
+function viewJudge(){
+  const recs = sortedRecords();
+  if(!recs.length){
+    return `<h1>月末判定</h1><section class="panel empty"><h2 style="margin-top:0">まだ記録がありません</h2>
+      <p>先に「設定」で設定ファイルを読み込み、「月末入力」で今月末の残高を入力してください。</p>
+      <div class="row-actions"><button class="primary" data-go="settings">設定を開く</button><button data-go="input">月末入力を開く</button></div></section>`;
+  }
+  const sel = state.viewYm && recs.find(r=>r.ym===state.viewYm) ? state.viewYm : recs[recs.length-1].ym;
+  const rec = recs.find(r=>r.ym===sel); const a = analyze(rec); const s = state.settings;
+  const cash = n(rec.cash), min = n(s.minCash), target = n(s.targetCash);
+  const p = a.proj[a.mode];
+  const scale = Math.max(target*1.35, cash*1.08, p.end*1.08, 1);
+  const pos = v => Math.max(0, Math.min(100, v/scale*100));
+  const fillColor = a.stageCls==="danger" ? "var(--danger)" : a.stageCls==="warn" ? "var(--warn)" : a.stageCls==="ok" ? "var(--ok)" : "var(--accent)";
+  const opts = recs.map(r=>`<option value="${r.ym}" ${r.ym===sel?"selected":""}>${ymLabel(r.ym)}末</option>`).join("");
+  const tierT = a.fin>0 ? a.fin : 1;
+  return `
+  <h1>月末判定</h1>
+  <label class="f" style="margin-top:0"><span>判定する月</span><select id="ymSel">${opts}</select></label>
+  <section class="panel hero" aria-label="手元の現金">
+    <div class="hero-top"><div><div class="small muted">${ymLabel(sel)}末の手元現金</div><div class="cash num">${Math.round(cash/10000).toLocaleString("ja-JP")}<small>万円</small></div></div>
+    <span class="stage ${a.stageCls}">${esc(a.stage)}</span></div>
+    <div class="gauge" role="img" aria-label="現金 ${man(cash)}、下限 ${man(min)}、目標 ${man(target)}、3か月先の最少 ${man(p.min)}">
+      <div class="bar"><div class="fill" style="width:${pos(cash)}%;background:${fillColor}"></div></div>
+      <div class="mark" style="left:${pos(min)}%"><span>下限 ${man(min)}</span></div>
+      <div class="mark" style="left:${pos(target)}%"><span>目標 ${man(target)}</span></div>
+      <div class="proj" style="left:${pos(p.min)}%"><span>3か月内の最少</span></div>
+    </div>
+    <p class="legend">四角は、推奨どおりに動いた場合の今後${n(s.horizon)||3}か月で最も少なくなる残高（${man(p.min)}）です。</p>
+  </section>
+
+  <h2>今月やること</h2>
+  <section class="panel">${a.acts.length ? `<ol class="actions">${a.acts.map(x=>`<li class="${x.cls}"><div class="act-title">${esc(x.title)}</div><div class="act-body">${esc(x.body)}</div></li>`).join("")}</ol>` : `<p class="muted">特に対応は必要ありません。設定どおりに続けてください。</p>`}</section>
+
+  ${a.reminders.length ? `<h2>来月の予定</h2><section class="panel"><ul class="notes">${a.reminders.map(r=>`<li>${esc(r)}</li>`).join("")}</ul></section>` : ""}
+
+  <h2>今後${n(s.horizon)||3}か月の見通し</h2>
+  <section class="panel"><p class="small muted">NISAを「${a.mode==="full"?"設定どおり":a.mode==="reduced"?"減額":"停止"}」とした場合です。</p>
+    <div class="tbl-wrap"><table class="num"><thead><tr><th>月</th><th>収入</th><th>支出</th><th>月末現金</th></tr></thead><tbody>
+    ${p.rows.map(r=>`<tr class="${r.cash<min?"low":""}"><td>${ymLabel(r.ym)}</td><td>${man(r.inc)}</td><td>${man(r.out)}</td><td>${man(r.cash)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <details><summary class="small">支出の内訳（${ymLabel(p.rows[0].ym)}）</summary><div class="tbl-wrap"><table class="num"><tbody>
+    ${Object.entries(p.rows[0].f.parts).filter(([k,v])=>v).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${yen(v)}</td></tr>`).join("")}</tbody></table></div></details>
+  </section>
+
+  <h2>資産の構成</h2>
+  <section class="panel">
+    <div class="tiers" role="img" aria-label="現金、NISA、自社株の構成">
+      <div style="width:${cash/tierT*100}%;background:var(--accent)"></div>
+      <div style="width:${a.nisaVal/tierT*100}%;background:var(--ok)"></div>
+      <div style="width:${a.stockVal/tierT*100}%;background:var(--warn)"></div>
+    </div>
+    <div class="tier-legend num">
+      <span class="dot" style="background:var(--accent)"></span><span>すぐ使える（現金）</span><span>${man(cash)}</span>
+      <span class="dot" style="background:var(--ok)"></span><span>数日で現金化（NISA）</span><span>${man(a.nisaVal)}</span>
+      <span class="dot" style="background:var(--warn)"></span><span>数週間で現金化（自社株 ${pct(a.ratio)}）</span><span>${man(a.stockVal)}</span>
+    </div>
+    <table class="num" style="margin-top:12px"><tbody>
+      <tr><td>住宅ローン残高${has(rec.loanBalance)?"":"（推定）"}</td><td>${a.bal!=null?man(a.bal):"—"}</td></tr>
+      <tr><td>適用金利</td><td>${a.rate!=null?pct(a.rate):"—"}</td></tr>
+      <tr><td>来月の返済のうち元本</td><td>${a.principalPart!=null?man(a.principalPart):"—"}</td></tr>
+      <tr><td>元本が減らなくなる金利</td><td>${a.breakeven?pct(a.breakeven):"—"}</td></tr>
+      <tr><td>NISA減額分の未買い戻し</td><td>${man(a.owed)}</td></tr>
+    </tbody></table>
+  </section>`;
+}
+
+/* ---------- 画面：月末入力 ---------- */
+const FIELDS = [
+  ["残高（必須）",[
+    ["cash","手元の現金（預金の合計）","円",""],
+  ]],
+  ["NISA・自社株",[
+    ["orkan","NISA オルカンの評価額","円",""],["fang","NISA FANG+の評価額","円",""],
+    ["nisaActual","今月のNISA積立額（実績）","円","買い戻し分は含めない"],["nisaCatchup","NISAの買い戻し額（実績）","円","減額分を成長投資枠で買い戻した額"],
+    ["price","自社株の株価","円",""],["esShares","持株会の株数","株",""],["rsFree","RS 解除済みの株数","株",""],["rsLock","RS 制限中の株数","株",""],
+    ["stockSoldYen","自社株を売った額（税引後）","円","今月売った場合のみ"],
+  ]],
+  ["住宅ローン",[
+    ["rate","適用金利（%）","%","4月・10月の見直し後に入力。空欄なら前回の値"],["loanBalance","ローン残高","円","返済予定表の値。空欄なら推定"],
+    ["prepaid","今月の繰上げ返済額","円",""],
+  ]],
+  ["支出の実績・メモ",[
+    ["variableActual","変動費の実績（自己負担分）","円",""],["extraActual","予定外の支出","円",""],["memo","メモ","",""],
+  ]]
+];
+function viewInput(){
+  const recs = sortedRecords();
+  const ym = state.editYm || (()=>{ const now = ymNow(); return recs.find(r=>r.ym===now) ? now : (recs.length ? ymAdd(recs[recs.length-1].ym,1) : now); })();
+  const existing = recs.find(r=>r.ym===ym);
+  const prev = recs.filter(r=>r.ym<ym).pop();
+  const carry = ["price","esShares","rsFree","rsLock","rate"];
+  const r = existing || Object.assign(blankRecord(), prev ? Object.fromEntries(carry.map(k=>[k,prev[k]])) : {});
+  return `<h1>月末入力</h1>
+  <section class="panel">
+    <label class="f" style="margin-top:0"><span>対象の月</span><input type="month" id="f_ym" value="${ym}"></label>
+    <p class="small muted">${existing?"この月の記録を編集しています。":"新しい月の記録です。株価・株数・金利は前月の値を引き継いでいます。"}</p>
+    ${FIELDS.map(([g,fs])=>`<h3>${g}</h3>${fs.map(([k,lab,u,h])=>`<label class="f"><span>${lab}${u&&u!=="%"?`（${u}）`:""}</span>
+      ${k==="memo"?`<textarea id="f_${k}" rows="2">${esc(r[k])}</textarea>`:`<input id="f_${k}" inputmode="decimal" autocomplete="off" value="${esc(r[k])}">`}
+      ${h?`<div class="hint">${h}</div>`:""}</label>`).join("")}`).join("")}
+    <div class="row-actions"><button class="primary" id="saveRec">記録して判定する</button>${existing?`<button class="danger" id="delRec">この月を削除</button>`:""}</div>
+  </section>
+  <h2>記録の一覧</h2>
+  <section class="panel">${recs.length?`<div class="tbl-wrap"><table class="num"><thead><tr><th>月</th><th>現金</th><th>NISA</th><th></th></tr></thead><tbody>
+  ${recs.slice().reverse().map(x=>`<tr><td>${ymLabel(x.ym)}</td><td>${man(n(x.cash))}</td><td>${man(n(x.orkan)+n(x.fang))}</td><td><button data-edit="${x.ym}">編集</button></td></tr>`).join("")}
+  </tbody></table></div>`:`<p class="muted">まだ記録がありません。</p>`}</section>`;
+}
+
+/* ---------- 画面：推移 ---------- */
+function lineChart(series, opts){
+  const W = 600, H = 220, L = 46, R = 10, T = 10, B = 26;
+  const xs = series[0].pts.map(p=>p.x); if(xs.length<2) return `<p class="muted">2か月以上記録すると表示されます。</p>`;
+  let max = Math.max(...series.flatMap(s=>s.pts.map(p=>p.y)), ...(opts.lines||[]).map(l=>l.y), 1);
+  let minv = Math.min(0, ...series.flatMap(s=>s.pts.map(p=>p.y)));
+  const X = i => L + i*(W-L-R)/(xs.length-1), Y = v => T + (1-(v-minv)/(max-minv))*(H-T-B);
+  const ticks = 4; let g = "";
+  for(let i=0;i<=ticks;i++){ const v = minv + (max-minv)*i/ticks; g += `<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end">${Math.round(v/10000)}</text>`; }
+  const step = Math.ceil(xs.length/6);
+  xs.forEach((x,i)=>{ if(i%step===0 || i===xs.length-1) g += `<text x="${X(i)}" y="${H-6}" text-anchor="middle">${x.slice(2).replace("-","/")}</text>`; });
+  (opts.lines||[]).forEach(l=>{ g += `<line x1="${L}" x2="${W-R}" y1="${Y(l.y)}" y2="${Y(l.y)}" stroke="${l.color}" stroke-dasharray="5 4"/>`; });
+  series.forEach(s=>{ g += `<polyline fill="none" stroke="${s.color}" stroke-width="2.5" points="${s.pts.map((p,i)=>`${X(i)},${Y(p.y)}`).join(" ")}"/>`; });
+  return `<div class="tbl-wrap"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(opts.label)}">${g}</svg></div>
+   <div class="chart-legend">${series.map(s=>`<span><span class="dot" style="background:${s.color}"></span> ${esc(s.name)}</span>`).join("")}${(opts.lines||[]).map(l=>`<span>点線：${esc(l.name)}</span>`).join("")}<span>単位：万円</span></div>`;
+}
+function viewTrend(){
+  const recs = sortedRecords(), s = state.settings;
+  if(!recs.length) return `<h1>推移</h1><section class="panel empty"><p>月末入力をすると、ここに推移が表示されます。</p></section>`;
+  const cash = {name:"現金", color:"var(--accent)", pts:recs.map(r=>({x:r.ym,y:n(r.cash)}))};
+  const nisa = {name:"NISA", color:"var(--ok)", pts:recs.map(r=>({x:r.ym,y:n(r.orkan)+n(r.fang)}))};
+  const stock = {name:"自社株", color:"var(--warn)", pts:recs.map(r=>({x:r.ym,y:(n(r.esShares)+n(r.rsFree)+n(r.rsLock))*n(r.price)}))};
+  const loan = {name:"ローン残高", color:"var(--danger)", pts:recs.map(r=>({x:r.ym,y: has(r.loanBalance)?n(r.loanBalance):(loanBalanceAt(r.ym)||0)}))};
+  return `<h1>推移</h1>
+  <h2>手元の現金</h2><section class="panel">${lineChart([cash],{label:"現金の推移",lines:[{y:n(s.minCash),name:"下限",color:"var(--danger)"},{y:n(s.targetCash),name:"目標",color:"var(--ok)"}]})}</section>
+  <h2>資産の内訳</h2><section class="panel">${lineChart([cash,nisa,stock],{label:"資産の推移"})}</section>
+  <h2>ローン残高</h2><section class="panel">${lineChart([loan],{label:"ローン残高の推移"})}</section>
+  <h2>月ごとの一覧</h2><section class="panel"><div class="tbl-wrap"><table class="num"><thead><tr><th>月</th><th>現金</th><th>NISA</th><th>自社株</th><th>金融資産</th><th>ローン残高</th></tr></thead><tbody>
+  ${recs.slice().reverse().map((r,i)=>{ const st=(n(r.esShares)+n(r.rsFree)+n(r.rsLock))*n(r.price); const ni=n(r.orkan)+n(r.fang); const lb=has(r.loanBalance)?n(r.loanBalance):loanBalanceAt(r.ym);
+    return `<tr><td>${ymLabel(r.ym)}</td><td>${man(n(r.cash))}</td><td>${man(ni)}</td><td>${man(st)}</td><td>${man(n(r.cash)+ni+st)}</td><td>${lb!=null?man(lb):"—"}</td></tr>`; }).join("")}
+  </tbody></table></div></section>`;
+}
+
+/* ---------- 画面：設定 ---------- */
+const SET_FIELDS = [
+  ["運用ルール",[["minCash","ミニマムキャッシュ（下限）","円"],["targetCash","準備金の目標額","円"],["rateTrigger","金利の見直し基準（例 0.025＝2.5%）",""],["stockCap","自社株比率の上限（例 0.2＝20%）",""],["principalWarn","元本の減り方の警告ライン（月）","円"],["horizon","見通しの月数","か月"]]],
+  ["毎月の支出",[["fixed","固定費","円"],["free","自由費・予備費","円"],["esMonthly","持株会の拠出","円"],["variableBudget","変動費（自己負担の期間）","円"],["variableSelfUntil","変動費を自己負担する最終月（YYYY-MM）",""]]],
+  ["NISA",[["nisaOrkan","オルカン（通常）","円"],["nisaFang","FANG+（通常）","円"],["nisaReducedOrkan","オルカン（減額時・育休中）","円"],["nisaReducedFang","FANG+（減額時・育休中）","円"]]],
+  ["固定資産税",[["ptaxAnnual","年税額","円"],["ptaxStartYm","納付開始月（YYYY-MM）",""],["ptaxMonths","納付月（一括なら 6）",""]]],
+  ["住宅ローン",[["loanPrincipal","借入額","円"],["loanStartYm","初回返済月（YYYY-MM）",""],["prepayMonth","繰上げ返済の実行月","月"],["prepayUnit","繰上げ返済の単位","円"]]],
+  ["自社株・税",[["avgCost","持株会の平均買付単価","円"],["rsCost","RSの取得価額（1株）","円"],["taxRate","譲渡益の税率（例 0.20315）",""],["esUnit","持株会の引出し単位","株"]]],
+  ["マッチング拠出",[["matching","状況（未確認／未開始／開始済／利用不可）",""],["matchingRoom","上乗せできる枠（月）","円"]]]
+];
+const LISTS = {
+  takeHome:{title:"手取り（月額。適用開始月ごと）", cols:[["from","開始月 YYYY-MM"],["amount","金額"]]},
+  loanPayment:{title:"ローンの返済額（見直しのたびに追加）", cols:[["from","開始月 YYYY-MM"],["amount","金額"]]},
+  kanri:{title:"管理費・修繕積立金（値上げのたびに追加）", cols:[["from","開始月 YYYY-MM"],["amount","金額"]]},
+  events:{title:"予定の収入・支出（還付、保険の更新、大きな出費など）", cols:[["ym","月 YYYY-MM"],["label","内容"],["amount","金額"],["kind","in＝収入 / out＝支出"]]},
+  leave:{title:"育休の予定（肩代わりする変動費）", cols:[["start","開始月 YYYY-MM"],["months","月数"],["amount","肩代わり額（月）"]]}
+};
+function viewSettings(){
+  const s = state.settings;
+  return `<h1>設定</h1>
+  <section class="panel"><h2 style="margin-top:0">設定ファイルとバックアップ</h2>
+    <p class="small muted">データはこの端末のブラウザ内にだけ保存されます。機種変更や削除に備えて、月に一度バックアップを書き出してください。</p>
+    <div class="row-actions"><button class="primary" id="exportBtn">バックアップを書き出す</button><button id="importBtn">ファイルを読み込む</button></div>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+    <p class="hint">設定ファイル（settingsのみ）を読み込むと設定だけを、バックアップ（settings＋records）を読み込むと記録も含めて置き換えます。</p>
+  </section>
+  ${SET_FIELDS.map(([g,fs])=>`<section class="panel"><h3 style="margin-top:0">${g}</h3>${fs.map(([k,lab,u])=>`<label class="f"><span>${lab}${u?`（${u}）`:""}</span><input data-set="${k}" value="${esc(s[k])}" ${["matching","variableSelfUntil","ptaxStartYm","ptaxMonths","loanStartYm"].includes(k)?"":`inputmode="decimal"`}></label>`).join("")}</section>`).join("")}
+  ${Object.entries(LISTS).map(([k,def])=>`<section class="panel"><h3 style="margin-top:0">${def.title}</h3>
+    ${(s[k]||[]).map((row,i)=>`<div class="list-row${def.cols.length>2?" wide":""}" style="grid-template-columns:${def.cols.length>2?"1fr 1fr":def.cols.map(()=> "1fr").join(" ")+" auto"}">
+      ${def.cols.map(([c,ph])=>`<input data-list="${k}" data-i="${i}" data-c="${c}" placeholder="${ph}" aria-label="${ph}" value="${esc(row[c])}">`).join("")}
+      <button data-del="${k}" data-i="${i}" aria-label="この行を削除">削除</button></div>`).join("")}
+    <button data-add="${k}">行を追加</button></section>`).join("")}
+  <section class="panel"><h3 style="margin-top:0">表示とデータ</h3>
+    <label class="f"><span>表示</span><select id="themeSel"><option value="">端末の設定に合わせる</option><option value="light">ライト</option><option value="dark">ダーク</option></select></label>
+    <div class="row-actions"><button class="danger" id="resetBtn">すべてのデータを消去</button></div>
+  </section>`;
+}
+
+/* ---------- 描画とイベント ---------- */
+let tab = "judge";
+function render(){
+  const v = {judge:viewJudge, input:viewInput, trend:viewTrend, settings:viewSettings}[tab]();
+  $("#app").innerHTML = v;
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-current", b.dataset.tab===tab?"page":"false"));
+  bind();
+}
+function go(t){ tab = t; if(t!=="input") state.editYm = null; render(); window.scrollTo(0,0); }
+function bind(){
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  const ymSel = $("#ymSel"); if(ymSel) ymSel.onchange = ()=>{ state.viewYm = ymSel.value; render(); };
+  const fym = $("#f_ym"); if(fym) fym.onchange = ()=>{ state.editYm = fym.value; render(); };
+  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{ state.editYm = b.dataset.edit; render(); window.scrollTo(0,0); });
+  const sv = $("#saveRec"); if(sv) sv.onclick = ()=>{
+    const ym = $("#f_ym").value; if(!ym){ toast("対象の月を入力してください"); return; }
+    if(!has($("#f_cash").value)){ toast("手元の現金を入力してください"); $("#f_cash").focus(); return; }
+    const rec = blankRecord(); rec.ym = ym;
+    FIELDS.forEach(([g,fs])=>fs.forEach(([k])=>{ rec[k] = $("#f_"+k).value.trim(); }));
+    state.records = state.records.filter(r=>r.ym!==ym).concat([rec]);
+    const keep = {settings:state.settings, records:state.records};
+    try{ localStorage.setItem(KEY, JSON.stringify(keep)); }catch(e){ toast("保存できませんでした"); return; }
+    state.viewYm = ym; state.editYm = null; toast(`${ymLabel(ym)}末の記録を保存しました`); go("judge");
+  };
+  const dl = $("#delRec"); if(dl) dl.onclick = ()=>{ const ym = $("#f_ym").value; if(!confirm(`${ymLabel(ym)}の記録を削除しますか`)) return; state.records = state.records.filter(r=>r.ym!==ym); persist(); state.editYm=null; toast("削除しました"); render(); };
+  document.querySelectorAll("[data-set]").forEach(i=>i.onchange=()=>{ const k=i.dataset.set; const textKeys=["matching","variableSelfUntil","ptaxStartYm","ptaxMonths","loanStartYm"]; state.settings[k] = textKeys.includes(k) ? i.value.trim() : n(i.value); persist(); toast("設定を保存しました"); });
+  document.querySelectorAll("[data-list]").forEach(i=>i.onchange=()=>{ const {list,i:idx,c} = i.dataset; const row = state.settings[list][idx]; row[c] = ["amount","months"].includes(c) ? n(i.value) : i.value.trim(); persist(); toast("設定を保存しました"); });
+  document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{ const k=b.dataset.add; state.settings[k] = (state.settings[k]||[]).concat([{}]); persist(); render(); });
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ const k=b.dataset.del; state.settings[k].splice(Number(b.dataset.i),1); persist(); render(); });
+  const ex = $("#exportBtn"); if(ex) ex.onclick = ()=>{
+    const blob = new Blob([JSON.stringify({app:"getsumatsu-hantei", version:1, exportedAt:new Date().toISOString(), settings:state.settings, records:state.records}, null, 2)], {type:"application/json"});
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `月末判定_バックアップ_${ymNow()}.json`; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();}, 1000);
+    toast("バックアップを書き出しました");
+  };
+  const ib = $("#importBtn"), fi = $("#importFile");
+  if(ib){ ib.onclick = ()=>fi.click(); fi.onchange = ()=>{
+    const f = fi.files[0]; if(!f) return; const rd = new FileReader();
+    rd.onload = ()=>{ try{
+      const d = JSON.parse(rd.result);
+      if(!d.settings){ toast("設定が含まれていないファイルです"); return; }
+      const withRecs = Array.isArray(d.records) && d.records.length;
+      if(!confirm(withRecs ? "設定と記録をこのファイルの内容に置き換えます。よろしいですか" : "設定をこのファイルの内容に置き換えます（記録はそのまま）。よろしいですか")) return;
+      state.settings = Object.assign({}, DEFAULT_SETTINGS, d.settings);
+      if(withRecs) state.records = d.records;
+      persist(); toast("読み込みました"); render();
+    }catch(e){ toast("ファイルを読み込めませんでした。JSON形式か確認してください"); } };
+    rd.readAsText(f); }; }
+  const th = $("#themeSel"); if(th){ th.value = state.settings.theme||""; th.onchange = ()=>{ state.settings.theme = th.value; applyTheme(); persist(); }; }
+  const rs = $("#resetBtn"); if(rs) rs.onclick = ()=>{ if(!confirm("この端末のすべての設定と記録を消去します。先にバックアップを書き出しましたか")) return; localStorage.removeItem(KEY); state = load(); toast("消去しました"); go("judge"); };
+}
+function persist(){ const {settings, records} = state; try{ localStorage.setItem(KEY, JSON.stringify({settings, records})); }catch(e){ toast("保存できませんでした"); } }
+function applyTheme(){ const t = state.settings.theme; if(t) document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme"); }
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>go(b.dataset.tab));
+applyTheme(); render();
+})();
+</script>
+</body>
+</html>
